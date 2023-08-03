@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <form id="checkout-form" method="post">
+        <input type="text" id="p_name" name="name" placeholder="Name" value="Nischay" required>
+        <input type="email" id="p_email" name="email" placeholder="Email" value="nischay@gmail.com" required>
+        <input type="tel" id="p_contact" name="contact" placeholder="Contact" value="3235124477" required>
+        <select name="country" id="p_country">
+            <option value="001">India</option>
+        </select>
+        <select name="course" id="p_course">
+            <option value="001">Data Science</option>
+            <option value="002">Full Stack</option>
+        </select>
+        <button type="submit">Submit</button>
+    </form>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script defer>
+        const form = document.querySelector('#checkout-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = getFormData();
+            
+            try {
+                const res = await fetch('http://localhost:3000/order', {
+                    method: "POST",
+                    body: formData,
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+                const cor = await res.json();
+
+                if(!cor.success) {
+                    alert(cor.msg)
+                } else {
+                    const options = {
+                        key: cor.key_id,
+                        amount: cor.amount,
+                        currency: cor.currency,
+                        name: cor.name,
+                        description: cor.description,
+                        order_id: cor.order_id,
+                        prefill: {
+                            contact: formData.contact,
+                            name: formData.name,
+                            email: formData.email
+                        },
+                        handler: successPaymentHandler,
+                        theme: {
+                            color: "#2300a3"
+                        }
+                    }
+                }
+
+                const rzp = new Razorpay(options);
+                rzp.on('payment.failed', failedPaymentHandler);
+
+                rzp.open();
+            } catch (error) {
+                console.log(error);
+                alert(error.message);
+            }
+        });
+
+        function successPaymentHandler (response) {
+            alert("Payment Successfull.")
+        }
+
+        function failedPaymentHandler (response) {
+            alert("Payment Failed.")
+        }
+
+        function getFormData () {
+            const email = document.querySelector('#p_email').value;
+            const name = document.querySelector('#p_name').value;
+            const contact = document.querySelector('#p_contact').value;
+            const country = document.querySelector('#p_country').value;
+            const course = document.querySelector('#p_course').value;
+
+            return { email, name, contact, code: country+"O"+course }
+        }
+    </script>
+</body>
+</html>
